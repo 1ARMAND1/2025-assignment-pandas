@@ -15,9 +15,9 @@ import matplotlib.pyplot as plt
 
 def load_data():
     """Load data from the CSV files referundum/regions/departments."""
-    referendum = pd.read_csv("referendum.csv")
-    regions = pd.read_csv({"regions.csv"})
-    departments = pd.read_csv({"departments.csv"})
+    referendum = pd.read_csv("./data/referendum.csv", sep=';')
+    regions = pd.read_csv("./data/regions.csv", sep=',')
+    departments = pd.read_csv("./data/departments.csv", sep=',')
 
     return referendum, regions, departments
 
@@ -33,7 +33,8 @@ def merge_regions_and_departments(regions, departments):
                                               'name': 'name_dep',
                                               'region_code': 'code_reg'})
     tab = pd.merge(regions[['code_reg', 'name_reg']],
-                   departments[['code_dep', 'name_dep']], on='code_reg')
+                   departments[['code_dep', 'name_dep', 'code_reg']],
+                   on='code_reg')
 
     return tab
 
@@ -51,6 +52,9 @@ def merge_referendum_and_areas(referendum, regions_and_departments):
     regions_and_departments = regions_and_departments[
         ~regions_and_departments['code_dep'].str.contains('Z')
         ]
+    regions_and_departments['code_dep'] = (
+        regions_and_departments['code_dep'].str.lstrip('0')
+    )
     tab = referendum.merge(regions_and_departments,
                            left_on='Department code', right_on='code_dep')
 
@@ -85,9 +89,9 @@ def plot_referendum_map(referendum_result_by_regions):
       should display the rate of 'Choice A' over all expressed ballots.
     * Return a gpd.GeoDataFrame with a column 'ratio' containing the results.
     """
-    gpd_ = gpd.read_file("regions.geojson")
-    gpd_ = gpd_.merge(gpd_, referendum_result_by_regions, left_on='code',
-                      right_on='code_reg')
+    gpd_ = gpd.read_file("./data/regions.geojson")
+    gpd_ = gpd_.merge(referendum_result_by_regions, left_on='code',
+                      right_index=True)
     gpd_['ratio'] = gpd_['Choice A'] / (gpd_['Choice A'] + gpd_['Choice B'])
     gpd_.plot(column='ratio')
 
